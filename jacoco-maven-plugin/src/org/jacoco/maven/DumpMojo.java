@@ -21,8 +21,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.dom4j.Document;
 import org.jacoco.core.tools.ExecDumpClient;
 import org.jacoco.core.tools.ExecFileLoader;
+import org.jacoco.maven.pom.Dom;
+import org.jacoco.maven.pom.Pom;
 
 /**
  * <p>
@@ -40,6 +43,11 @@ import org.jacoco.core.tools.ExecFileLoader;
  */
 @Mojo(name = "dump", defaultPhase = LifecyclePhase.POST_INTEGRATION_TEST, threadSafe = true)
 public class DumpMojo extends AbstractJacocoMojo {
+
+	/**
+	 * 是否已更新pom
+	 */
+	public static boolean inserted = false;
 
 	/**
 	 * Path to the output file for execution data.
@@ -90,6 +98,23 @@ public class DumpMojo extends AbstractJacocoMojo {
 
 	@Override
 	public void executeMojo() throws MojoExecutionException {
+		final String pwd = new File(System.getProperty("user.dir"))
+				.getAbsolutePath();// 当前根目录
+		final Document doc = Dom.readFile(new File(
+				pwd + System.getProperty("file.separator") + "pom.xml"));
+		// 如果为多模块,则新建一个子模块用于收集所有模块覆盖率情况
+		if (Dom.isMulModule(doc)) {
+			final String artifactId = Dom.getArtifaceId(doc);
+			if (!inserted) {
+				final Pom pom = Dom.transPom(new File(pwd
+						+ System.getProperty("file.separator") + "pom.xml"));
+				Dom.CreatePom(pom,
+						artifactId.toLowerCase() + "-coverage-report");// 创建专门用于收集覆盖率的子模块
+				Dom.insertModule(doc,
+						artifactId.toLowerCase() + "-coverage-report", "."); // 在父模块中加入上一步新增的子模块
+				inserted = true;
+			}
+		}
 		final ExecDumpClient client = new ExecDumpClient() {
 			@Override
 			protected void onConnecting(final InetAddress address,
