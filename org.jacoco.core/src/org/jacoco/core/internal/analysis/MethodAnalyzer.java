@@ -18,9 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jacoco.core.analysis.CoverageBuilder;
 import org.jacoco.core.analysis.ICounter;
 import org.jacoco.core.analysis.IMethodCoverage;
 import org.jacoco.core.analysis.ISourceNode;
+import org.jacoco.core.diff.MethodInfo;
 import org.jacoco.core.internal.analysis.filter.IFilter;
 import org.jacoco.core.internal.analysis.filter.IFilterOutput;
 import org.jacoco.core.internal.flow.IFrame;
@@ -120,7 +122,10 @@ public class MethodAnalyzer extends MethodProbesVisitor
 			final MethodVisitor methodVisitor) {
 		filter.filter(className, superClassName, methodNode, this);
 
-		methodVisitor.visitCode();
+		if (shoudHackMethod(methodNode, CoverageBuilder.methodInfos)) {
+			methodVisitor.visitCode();
+		}
+
 		for (final TryCatchBlockNode n : methodNode.tryCatchBlocks) {
 			n.accept(methodVisitor);
 		}
@@ -129,7 +134,9 @@ public class MethodAnalyzer extends MethodProbesVisitor
 			currentNode.accept(methodVisitor);
 			currentNode = currentNode.getNext();
 		}
-		methodVisitor.visitEnd();
+		if (shoudHackMethod(methodNode, CoverageBuilder.methodInfos)) {
+			methodVisitor.visitEnd();
+		}
 	}
 
 	private final Set<AbstractInsnNode> ignored = new HashSet<AbstractInsnNode>();
@@ -422,6 +429,26 @@ public class MethodAnalyzer extends MethodProbesVisitor
 			this.target = target;
 			this.branch = branch;
 		}
+	}
+
+	/**
+	 * @param methodNode
+	 * @param methodInfos
+	 * @return
+	 */
+	private boolean shoudHackMethod(final MethodNode methodNode,
+									final List<MethodInfo> methodInfos) {
+		for (final MethodInfo methodInfo : methodInfos) {
+			final String methodName = methodInfo.getMethodName();
+			final String clazzName = methodInfo.getPackages().replace(".", "/")
+					+ "/" + methodInfo.getClassName();
+			if (methodNode.name.equals(methodName)
+					&& className.equals(clazzName)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }
