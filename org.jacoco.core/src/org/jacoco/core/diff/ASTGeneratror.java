@@ -22,12 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author hp
- *
- */
-
-/**
- * @author hp
+ * @author angrytester
  *
  */
 public class ASTGeneratror {

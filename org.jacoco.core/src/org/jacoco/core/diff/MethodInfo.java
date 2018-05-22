@@ -12,7 +12,7 @@
 package org.jacoco.core.diff;
 
 /**
- * @author nagrytester
+ * @author agrytester
  *
  */
 public class MethodInfo {
